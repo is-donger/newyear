@@ -46,12 +46,20 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
     return () => document.removeEventListener('fullscreenchange', handleFsChange);
   }, []);
 
+  // 字幕滚动高度计算逻辑
   useEffect(() => {
     if (data.type === 'credits' && scrollContainerRef.current && finalTitleRef.current) {
-        const container = scrollContainerRef.current;
-        const finalTitle = finalTitleRef.current;
-        const finalPos = 384 - (finalTitle.offsetTop + (finalTitle.offsetHeight / 2));
-        container.style.setProperty('--scroll-final-pos', `${finalPos}px`);
+        // 给一点点延迟确保布局渲染完成
+        const timer = setTimeout(() => {
+            const container = scrollContainerRef.current;
+            const finalTitle = finalTitleRef.current;
+            if (container && finalTitle) {
+                // 终点位置：让最终标题停在容器垂直居中的位置 (768/2 = 384)
+                const finalPos = 384 - (finalTitle.offsetTop + (finalTitle.offsetHeight / 2));
+                container.style.setProperty('--scroll-final-pos', `${finalPos}px`);
+            }
+        }, 100);
+        return () => clearTimeout(timer);
     }
   }, [data.type]);
 
@@ -81,10 +89,15 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
   const renderContent = () => {
     if (data.type === 'title') {
       return (
-        <div className="flex flex-col items-center justify-center h-full p-20 z-10 animate-title-in">
-          <EditableText text={data.title} className="text-9xl font-black text-shine-effect mb-8 text-center" onChange={updateTitle} />
-          <div className="space-y-4">
-            {data.content?.map((line, idx) => <EditableText key={idx} text={line} className="text-4xl text-yellow-100/90 font-bold text-center" onChange={(v) => updateContent(idx, v)} />)}
+        <div className="flex flex-col items-center justify-center h-full p-12 z-10 animate-title-in">
+          {/* 将 9xl 缩小到 8xl 并增加宽度限制，确保不溢出 */}
+          <div className="max-w-[90%] flex justify-center">
+            <EditableText text={data.title} className="text-8xl font-black text-shine-effect mb-10 text-center leading-tight" onChange={updateTitle} />
+          </div>
+          <div className="space-y-6">
+            {data.content?.map((line, idx) => (
+              <EditableText key={idx} text={line} className="text-4xl text-yellow-100/90 font-bold text-center" onChange={(v) => updateContent(idx, v)} />
+            ))}
           </div>
         </div>
       );
@@ -105,15 +118,19 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
               </button>
             </div>
           )}
-          <div ref={scrollContainerRef} className="animate-credits-roll flex flex-col items-center w-full px-16 space-y-10 transform-gpu">
-            <div className="mb-24 text-center mt-4 flex flex-col items-center">
+          <div ref={scrollContainerRef} className="animate-credits-roll flex flex-col items-center w-full px-16 space-y-12 transform-gpu">
+            <div className="mb-24 text-center mt-8 flex flex-col items-center">
               <EditableText text={data.title} className="text-6xl font-black text-yellow-400 mb-6" onChange={updateTitle} />
-              <div className="w-24 h-1 bg-yellow-400/30 rounded-full"></div>
+              <div className="w-32 h-1 bg-yellow-400/30 rounded-full"></div>
             </div>
-            {data.content?.map((line, idx) => <EditableText key={idx} text={line} className={`text-center transition-all ${line.includes('致谢') || line.includes('名单') ? 'text-4xl text-yellow-300 mt-16 font-extrabold' : 'text-2xl text-white/80'}`} onChange={(v) => updateContent(idx, v)} />)}
-            <div className="pt-[700px] pb-[1000px] flex flex-col items-center">
-              <div ref={finalTitleRef} className="big-gala-title"><EditableText text="高一1班元旦晚会" className="text-[84px] font-black text-shine-effect text-center" onChange={() => {}} /></div>
-              <div className="mt-10 text-yellow-400/40 text-2xl tracking-[1em] uppercase">Happy New Year 2026</div>
+            {data.content?.map((line, idx) => (
+              <EditableText key={idx} text={line} className={`text-center transition-all ${line.includes('致谢') || line.includes('名单') ? 'text-4xl text-yellow-300 mt-20 font-extrabold' : 'text-2xl text-white/80 font-medium'}`} onChange={(v) => updateContent(idx, v)} />
+            ))}
+            <div className="pt-[800px] pb-[1000px] flex flex-col items-center">
+              <div ref={finalTitleRef} className="big-gala-title">
+                <EditableText text="高一1班元旦晚会" className="text-[84px] font-black text-shine-effect text-center" onChange={() => {}} />
+              </div>
+              <div className="mt-12 text-yellow-400/30 text-2xl tracking-[1.2em] font-light uppercase">Happy New Year 2026</div>
             </div>
           </div>
         </div>
@@ -153,7 +170,7 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
         </div>
         
         <div className="flex flex-col gap-10 items-center text-center w-full max-w-5xl">
-          <EditableText text={data.content?.[0] || ""} className="text-5xl text-white font-bold text-center" onChange={(v) => updateContent(0, v)} />
+          <EditableText text={data.content?.[0] || ""} className="text-5xl text-white font-bold text-center leading-relaxed" onChange={(v) => updateContent(0, v)} />
           
           {isShowingAnswer && (
             <div className="pt-16 w-full flex flex-col items-center animate-title-in">

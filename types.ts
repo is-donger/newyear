@@ -6,7 +6,6 @@ export interface SlideData {
   content?: string[];
   type: 'title' | 'content' | 'list' | 'credits' | 'board';
   visited?: boolean;
-  image?: string;
 }
 
 export interface AppState {

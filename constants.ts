@@ -1,18 +1,14 @@
 
 import { SlideData } from './types';
 
-// Export categories so it can be used in Slide.tsx
 export const categories = ["元旦", "知识问答", "体育", "名人名言", "随机"];
 const values = [100, 200, 300, 400, 500];
 
-// Define QuestionData interface to handle optional image property
 interface QuestionData {
   q: string;
   a: string;
-  img?: string;
 }
 
-// Main performance slides (Slides 1-17)
 const mainSlides: SlideData[] = [
   { id: 1, title: "2026 元旦晚会", type: 'title' },
   { id: 2, title: "剧场表演：《三只小猪》", type: 'content', content: ["表演者：203宿舍", ""] },
@@ -33,7 +29,6 @@ const mainSlides: SlideData[] = [
   { id: 17, title: "互动：数字炸弹", type: 'content', content: [] }
 ];
 
-// Slide 18: Quiz Board (Jeopardy style)
 const boardSlide: SlideData = { 
   id: 18, 
   title: "知识问答", 
@@ -41,20 +36,14 @@ const boardSlide: SlideData = {
   content: categories 
 };
 
-// Questions for "元旦" Category
 const yuandanQuestions: QuestionData[] = [
   { q: "我国古代哪个朝代开始将正月初一正式定名为“元旦”？", a: "汉朝" },
   { q: "我国古代曾以十月初一为元旦，这个立法是由哪位皇帝颁布推行的？", a: "汉武帝" },
   { q: "我们现在说的元旦是公历1月1日，在古代，元旦其实指的是哪一天？", a: "农历正月初一" },
   { q: "元旦在古代也被成为“元日”，“元”和“旦”分别代表什么意思？", a: "元是开始、第一，旦是早晨" },
-  { 
-    q: "世界上最早开始庆祝元旦的国家或者地区是哪里？", 
-    a: "汤加（大洋洲）", 
-    img: "https://images.unsplash.com/photo-1610214434778-9585694285df?q=80&w=1000&auto=format&fit=crop" 
-  }
+  { q: "世界上最早开始庆祝元旦的国家或者地区是哪里？", a: "汤加（大洋洲）" }
 ];
 
-// Questions for "知识问答" Category
 const zhishiQuestions: QuestionData[] = [
   { q: "____________________，望峰息心；", a: "鸢飞戾天者" },
   { q: "单反相机拍照时，为拍清远处景物，镜头应该______（前伸/后缩）", a: "前伸" },
@@ -63,20 +52,14 @@ const zhishiQuestions: QuestionData[] = [
   { q: "从3名男生和4名女生中选出3人参加知识竞赛，要求选出的3人中至少有一位是男生，一共有多少种不同的选法？", a: "31种" }
 ];
 
-// Questions for "体育" Category
 const tiyuQuestions: QuestionData[] = [
   { q: "马拉松全长：____ km（保留5为有效数字）", a: "42.195" },
   { q: "库里总共赢过多少次总冠军？", a: "4次" },
   { q: "NBA全称（英文）：", a: "National Basketball Association" },
-  { 
-    q: "奥运会的五环标志，分别代表哪个大洲？", 
-    a: "蓝（欧洲）、黑（非洲）、红（美洲）、黄（亚洲）、绿（大洋洲）",
-    img: "https://images.unsplash.com/photo-1569512046602-06900223f114?q=80&w=1000&auto=format&fit=crop"
-  },
+  { q: "奥运会的五环标志，分别代表哪个大洲？", a: "蓝（欧洲）、黑（非洲）、红（美洲）、黄（亚洲）、绿（大洋洲）" },
   { q: "“帽子戏法”最早起源于哪项运动？", a: "板球运动" }
 ];
 
-// Questions for "名人名言" Category
 const mingyanQuestions: QuestionData[] = [
   { q: "横眉冷对千夫指，俯首甘为孺子牛。", a: "鲁迅" },
   { q: "世界上只有一种英雄主义，就是看清生活的真相后依然热爱生活。", a: "罗曼·罗兰" },
@@ -85,7 +68,6 @@ const mingyanQuestions: QuestionData[] = [
   { q: "当你凝视深渊时，深渊也在凝视你", a: "尼采" }
 ];
 
-// Questions for "随机" Category
 const suijiQuestions: QuestionData[] = [
   { q: "我们日常使用的人民币纸币上，除了汉字，还印有哪几种文字？", a: "蒙古文、藏文、维吾尔文、壮文" },
   { q: "2025届宝安中学高一新生军训的时间是几号到几号", a: "8月24日-30日" },
@@ -94,57 +76,26 @@ const suijiQuestions: QuestionData[] = [
   { q: "张老师的生日是 m 月 n 日。候选日期：2/2, 2/3, 2/9, 6/5, 6/6, 6/9, 7/5, 7/8, 9/2, 9/6。\n小明知道月份，小强知道日期。\n小明：如果我不知道，那小强肯定也不知道。\n小强：本来我也不知道，现在我知道了。\n小明：哦，那我也知道了。\n请问生日是哪天？", a: "9月2日" }
 ];
 
-// Slides 19-43: Quiz Content (5 categories * 5 = 25 slides)
 const quizSlides: SlideData[] = [];
 let quizId = 19;
 categories.forEach((cat, catIdx) => {
   values.forEach((val, valIdx) => {
-    let content = ["题目：", "回答：", "得分记录："];
-    let image = undefined;
-
-    if (cat === "元旦") {
-      const qData = yuandanQuestions[valIdx];
-      if (qData) {
-        content = [qData.q, qData.a, ""];
-        if (qData.img) image = qData.img;
-      }
-    } else if (cat === "知识问答") {
-      const qData = zhishiQuestions[valIdx];
-      if (qData) {
-        content = [qData.q, qData.a, ""];
-        if (qData.img) image = qData.img;
-      }
-    } else if (cat === "体育") {
-      const qData = tiyuQuestions[valIdx];
-      if (qData) {
-        content = [qData.q, qData.a, ""];
-        if (qData.img) image = qData.img;
-      }
-    } else if (cat === "名人名言") {
-      const qData = mingyanQuestions[valIdx];
-      if (qData) {
-        content = [qData.q, qData.a, ""];
-        if (qData.img) image = qData.img;
-      }
-    } else if (cat === "随机") {
-      const qData = suijiQuestions[valIdx];
-      if (qData) {
-        content = [qData.q, qData.a, ""];
-        if (qData.img) image = qData.img;
-      }
-    }
+    let content = ["", "", ""];
+    if (cat === "元旦") content = [yuandanQuestions[valIdx].q, yuandanQuestions[valIdx].a, ""];
+    else if (cat === "知识问答") content = [zhishiQuestions[valIdx].q, zhishiQuestions[valIdx].a, ""];
+    else if (cat === "体育") content = [tiyuQuestions[valIdx].q, tiyuQuestions[valIdx].a, ""];
+    else if (cat === "名人名言") content = [mingyanQuestions[valIdx].q, mingyanQuestions[valIdx].a, ""];
+    else if (cat === "随机") content = [suijiQuestions[valIdx].q, suijiQuestions[valIdx].a, ""];
 
     quizSlides.push({
       id: quizId++,
       title: `${cat} - ${val}$ 题`,
       type: 'content',
-      content: content,
-      image: image
+      content: content
     });
   });
 });
 
-// Slide 44: Interaction "立" BA
 const standBASlide: SlideData = { 
   id: 44, 
   title: "互动：“立” BA", 
@@ -152,7 +103,6 @@ const standBASlide: SlideData = {
   content: ["", "", ""] 
  };
 
-// Slide 45: Credits (Scrolling)
 const creditsSlide: SlideData = { 
   id: 45, 
   title: "工作人员名单", 

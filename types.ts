@@ -4,8 +4,9 @@ export interface SlideData {
   title: string;
   subtitle?: string;
   content?: string[];
-  type: 'title' | 'content' | 'list' | 'credits' | 'board';
+  type: 'title' | 'content' | 'list' | 'credits' | 'board' | 'top-left' | 'soup';
   visited?: boolean;
+  image?: string;
 }
 
 export interface AppState {

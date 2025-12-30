@@ -12,8 +12,8 @@
             padding: 0;
             overflow: hidden;
             background-color: #000;
-            font-family: system-ui, -apple-system, sans-serif;
         }
+        /* 硬件加速容器 */
         #root {
             transform: translateZ(0);
             backface-visibility: hidden;
@@ -24,29 +24,37 @@
             cursor: text;
         }
 
-        @keyframes roll-smooth {
+        /* 名单滚动动画：前端保持平稳，后端（标题出现时）显著加速 */
+        @keyframes roll-to-center {
             0% { 
-                transform: translate3d(0, 800px, 0); 
+                transform: translate3d(0, 768px, 0); 
+            }
+            85% {
+                /* 用 85% 的时间平稳地滚动完名单区，此时距离终点还有约 700px 的大间距 */
+                transform: translate3d(0, calc(var(--scroll-final-pos, -1500px) + 700px), 0);
             }
             100% { 
-                transform: translate3d(0, var(--scroll-final-pos, -2000px), 0); 
+                /* 仅用最后 15% 的时间快速完成剩下的 700px 路程，实现结尾加速感 */
+                transform: translate3d(0, var(--scroll-final-pos, -1500px), 0); 
             }
         }
 
         .animate-credits-roll {
-            animation: roll-smooth 28s linear forwards;
+            /* 总时长 24s，分段节奏由 keyframes 控制 */
+            animation: roll-to-center 24s linear forwards;
             will-change: transform;
-            transform: translate3d(0,0,0);
         }
 
+        /* 首屏标题入场动画 */
         @keyframes title-entrance {
-            0% { opacity: 0; transform: scale(0.9) translateY(30px); filter: blur(10px); }
+            0% { opacity: 0; transform: scale(0.8) translateY(20px); filter: blur(10px); }
             100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
         }
         .animate-title-in {
-            animation: title-entrance 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+            animation: title-entrance 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
 
+        /* 标题流光效果 */
         @keyframes text-shine {
             0% { background-position: -200% center; }
             100% { background-position: 200% center; }
@@ -59,6 +67,7 @@
             animation: text-shine 4s linear infinite;
         }
 
+        /* 背景微动粒子效果 */
         @keyframes float-particle {
             0%, 100% { transform: translate(0, 0); opacity: 0.3; }
             50% { transform: translate(20px, -20px); opacity: 0.6; }
@@ -73,11 +82,16 @@
             animation: float-particle 4s infinite ease-in-out;
         }
 
-        .scrollbar-hide::-webkit-scrollbar { display: none; }
-        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
 
         .prompter-card {
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.1s linear;
             transform-style: preserve-3d;
             backface-visibility: hidden;
         }
@@ -86,16 +100,13 @@
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
             white-space: nowrap;
-            text-shadow: 0 0 30px rgba(251, 191, 36, 0.4), 0 10px 50px rgba(0,0,0,0.8);
+            text-shadow: 0 0 20px rgba(251, 191, 36, 0.3), 0 10px 40px rgba(0,0,0,0.6);
         }
     </style>
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@19.0.0",
-    "react-dom": "https://esm.sh/react-dom@19.0.0",
-    "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
-    "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
+    "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/"
   }
@@ -104,6 +115,5 @@
 </head>
 <body>
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
 </body>
 </html>

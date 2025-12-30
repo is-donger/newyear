@@ -1,8 +1,8 @@
 
-import React, { useEffect, useRef, memo, useState, useCallback } from 'react';
+import React, { useEffect, useRef, memo, useState, useLayoutEffect } from 'react';
 import { SlideData } from '../types';
 import EditableText from './EditableText';
-import { categories } from '../constants';
+import { categories, quizValues } from '../constants';
 
 interface SlideProps {
   data: SlideData;
@@ -12,120 +12,69 @@ interface SlideProps {
   onJump?: (index: number) => void;
 }
 
-// Firework Canvas Component
-const FireworksCanvas = memo(() => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const FireworkBurst = memo(({ x, y, color }: { x: string; y: string; color: string }) => {
+  const particles = Array.from({ length: 30 }).map((_, i) => {
+    const angle = (i * (360 / 30)) * (Math.PI / 180);
+    const distance = 100 + Math.random() * 150;
+    const tx = Math.cos(angle) * distance;
+    const ty = Math.sin(angle) * distance;
+    return (
+      <div 
+        key={i} 
+        className="firework-particle" 
+        style={{ 
+          '--tw-x': `${tx}px`, 
+          '--tw-y': `${ty}px`, 
+          backgroundColor: color,
+          color: color,
+          animationDelay: `${Math.random() * 0.1}s`
+        } as React.CSSProperties} 
+      />
+    );
+  });
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    let animationId: number;
-    let particles: any[] = [];
-    const colors = ['#fbbf24', '#f59e0b', '#ef4444', '#f87171', '#60a5fa', '#34d399', '#fef3c7'];
-
-    const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
-    window.addEventListener('resize', resize);
-    resize();
-
-    class Particle {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-      alpha: number;
-      color: string;
-      life: number;
-      gravity: number;
-
-      constructor(x: number, y: number, color: string) {
-        this.x = x;
-        this.y = y;
-        const angle = Math.random() * Math.PI * 2;
-        const velocity = Math.random() * 6 + 2;
-        this.vx = Math.cos(angle) * velocity;
-        this.vy = Math.sin(angle) * velocity;
-        this.alpha = 1;
-        this.color = color;
-        this.life = Math.random() * 0.02 + 0.01;
-        this.gravity = 0.12;
-      }
-
-      update() {
-        this.vx *= 0.98;
-        this.vy *= 0.98;
-        this.vy += this.gravity;
-        this.x += this.vx;
-        this.y += this.vy;
-        this.alpha -= this.life;
-      }
-
-      draw() {
-        if (!ctx) return;
-        ctx.globalAlpha = this.alpha;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.fill();
-      }
-    }
-
-    const createFirework = () => {
-      const x = Math.random() * canvas.width;
-      const y = Math.random() * (canvas.height * 0.6);
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      for (let i = 0; i < 60; i++) {
-        particles.push(new Particle(x, y, color));
-      }
-    };
-
-    let lastFirework = 0;
-    const animate = (time: number) => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
-      if (time - lastFirework > 800) {
-        createFirework();
-        lastFirework = time;
-      }
-
-      particles = particles.filter(p => p.alpha > 0);
-      particles.forEach(p => {
-        p.update();
-        p.draw();
-      });
-
-      animationId = requestAnimationFrame(animate);
-    };
-
-    animationId = requestAnimationFrame(animate);
-
-    return () => {
-      cancelAnimationFrame(animationId);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-
-  return <canvas ref={canvasRef} id="fireworks-canvas" />;
+  return (
+    <div className="firework-container" style={{ left: x, top: y }}>
+      {particles}
+    </div>
+  );
 });
 
-const SlideBackground = memo(({ isFirst }: { isFirst?: boolean }) => (
+const FireworkDisplay = () => {
+  const [bursts, setBursts] = useState<{ id: number; x: string; y: string; color: string }[]>([]);
+  const idCounter = useRef(0);
+
+  useEffect(() => {
+    const colors = ['#fbbf24', '#ffffff', '#ffd700', '#ffaa00', '#ff4400'];
+    const interval = setInterval(() => {
+      const newBurst = {
+        id: idCounter.current++,
+        x: `${10 + Math.random() * 80}%`,
+        y: `${15 + Math.random() * 50}%`,
+        color: colors[Math.floor(Math.random() * colors.length)],
+      };
+      setBursts(prev => [...prev.slice(-12), newBurst]);
+    }, 600);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
+      {bursts.map(b => <FireworkBurst key={b.id} {...b} />)}
+    </div>
+  );
+};
+
+const SlideBackground = memo(() => (
   <div className="absolute inset-0 bg-gradient-to-br from-red-900 to-red-700 overflow-hidden pointer-events-none transform-gpu">
-    <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-yellow-500/10 rounded-full blur-[120px]"></div>
-    <div className="absolute -bottom-40 -right-40 w-[700px] h-[700px] bg-yellow-400/10 rounded-full blur-[140px]"></div>
+    <div className="absolute -top-40 -left-40 w-[600px] h-[600px] bg-yellow-500/15 rounded-full blur-[120px]"></div>
+    <div className="absolute -bottom-40 -right-40 w-[700px] h-[700px] bg-yellow-400/15 rounded-full blur-[140px]"></div>
     
-    {isFirst && (
-      <>
-        <div className="bg-particle" style={{ top: '20%', left: '15%', animationDelay: '0s' }}></div>
-        <div className="bg-particle" style={{ top: '60%', left: '80%', animationDelay: '1s' }}></div>
-        <div className="bg-particle" style={{ top: '30%', left: '70%', animationDelay: '2s' }}></div>
-        <div className="bg-particle" style={{ top: '80%', left: '20%', animationDelay: '3s' }}></div>
-      </>
-    )}
+    <div className="bg-particle" style={{ top: '20%', left: '15%', animationDelay: '0s' }}></div>
+    <div className="bg-particle" style={{ top: '60%', left: '80%', animationDelay: '1.5s' }}></div>
+    <div className="bg-particle" style={{ top: '30%', left: '70%', animationDelay: '3s' }}></div>
+    <div className="bg-particle" style={{ top: '80%', left: '20%', animationDelay: '4.5s' }}></div>
 
     <div className="absolute inset-6 border-[6px] border-yellow-500/20 rounded-sm"></div>
     <div className="absolute inset-10 border-2 border-yellow-500/10 rounded-sm"></div>
@@ -138,64 +87,57 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
   const finalTitleRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0); 
   const [showFireworks, setShowFireworks] = useState(false);
-
-  // Special sub-step for merged soup slide
   const [soupState, setSoupState] = useState<'rules' | 'board'>('rules');
+  const [isReady, setIsReady] = useState(false);
 
-  const isQuizSlide = data.id >= 19 && data.id <= 43;
+  // 使用 useLayoutEffect 在绘制前计算坐标，避免闪烁
+  useLayoutEffect(() => {
+    if (data.type === 'credits') {
+      const calculate = () => {
+        if (scrollContainerRef.current && finalTitleRef.current) {
+          const container = scrollContainerRef.current;
+          const finalTitle = finalTitleRef.current;
+          
+          // 获取相对容器顶部的偏移量
+          const titleOffsetTop = finalTitle.offsetTop;
+          const titleHeight = finalTitle.offsetHeight;
+          
+          // 目标：将 finalTitle 的垂直中心对齐幻灯片高度(768)的中心(384)
+          // 最终 Y 偏移 = 384 - (标题在容器中的顶部位置 + 标题高度的一半)
+          const targetY = 384 - (titleOffsetTop + titleHeight / 2);
+          
+          container.style.setProperty('--scroll-final-pos', `${targetY}px`);
+          setIsReady(true);
+        }
+      };
+      
+      // 稍微给点时间让布局完成渲染计算
+      const timer = setTimeout(calculate, 60);
+      return () => clearTimeout(timer);
+    }
+  }, [data.id, data.type]);
 
   useEffect(() => {
     if (data.type === 'credits') {
-      setShowFireworks(false);
-      if (audioRef.current) {
-        const audio = audioRef.current;
+      const audio = audioRef.current;
+      if (audio) {
         audio.volume = 1.0;
-        
-        const playAudio = async () => {
-          try {
-            await audio.play();
-          } catch (e) {
-            const runOnce = () => {
-              audio.play().catch(() => {});
-              window.removeEventListener('click', runOnce);
-              window.removeEventListener('keydown', runOnce);
-            };
-            window.addEventListener('click', runOnce);
-            window.addEventListener('keydown', runOnce);
-          }
-        };
-        playAudio();
+        audio.play().catch(() => {});
       }
 
-      if (scrollContainerRef.current && finalTitleRef.current) {
-        const container = scrollContainerRef.current;
-        const finalTitle = finalTitleRef.current;
-        const titleTop = finalTitle.offsetTop;
-        const titleHeight = finalTitle.offsetHeight;
-        const titleCenterInContainer = titleTop + (titleHeight / 2);
-        
-        // 384 is the vertical center of a 768 height slide. 
-        const finalPos = 384 - titleCenterInContainer;
-        container.style.setProperty('--scroll-final-pos', `${finalPos}px`);
-      }
+      const fwTimer = setTimeout(() => setShowFireworks(true), 4000);
+
+      return () => {
+        clearTimeout(fwTimer);
+        if (audio) {
+          audio.pause();
+          audio.currentTime = 0;
+        }
+      };
     }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    };
-  }, [data.type]);
-
-  const handleAnimationEnd = useCallback(() => {
-    if (data.type === 'credits') {
-      setShowFireworks(true);
-    }
-  }, [data.type]);
+  }, [data.id, data.type]);
 
   const updateTitle = (newTitle: string) => onUpdate({ ...data, title: newTitle });
-  
   const updateContent = (index: number, newText: string) => {
     if (data.content) {
       const newContent = [...data.content];
@@ -217,21 +159,12 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
     if (data.type === 'title') {
       return (
         <div className="flex flex-col items-center justify-center h-full text-center p-20 z-10 animate-title-in">
-          <div className="relative group">
-            <EditableText 
-              text={data.title} 
-              className="text-9xl font-black text-shine-effect leading-tight mb-8 drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)] text-center"
-              onChange={updateTitle}
-            />
+          <div className="relative group max-w-full overflow-hidden px-4">
+            <EditableText text={data.title} className="text-7xl font-black text-shine-effect leading-tight mb-8 drop-shadow-[0_15px_30px_rgba(0,0,0,0.5)] text-center whitespace-nowrap" onChange={updateTitle} />
           </div>
           <div className="space-y-4">
             {data.content?.map((line, idx) => (
-              <EditableText
-                key={idx}
-                text={line}
-                className="text-4xl text-yellow-100/90 font-bold drop-shadow-md text-center"
-                onChange={(val) => updateContent(idx, val)}
-              />
+              <EditableText key={idx} text={line} className="text-4xl text-yellow-100/90 font-bold drop-shadow-md text-center" onChange={(val) => updateContent(idx, val)} />
             ))}
           </div>
           <div className="mt-16 w-64 h-1.5 bg-gradient-to-r from-transparent via-yellow-400/80 to-transparent rounded-full shadow-[0_0_15px_rgba(251,191,36,0.5)]"></div>
@@ -243,23 +176,18 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
     if (data.type === 'credits') {
       return (
         <div className="flex flex-col h-full z-10 relative overflow-hidden">
-          {showFireworks && <FireworksCanvas />}
           <audio ref={audioRef} src="./bgm.mp3" preload="auto" loop />
-          
-          <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-red-900 via-red-900/40 to-transparent z-20 pointer-events-none"></div>
-          <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-red-800 via-red-800/60 to-transparent z-20 pointer-events-none"></div>
+          {showFireworks && <FireworkDisplay />}
 
           <div 
             ref={scrollContainerRef} 
-            onAnimationEnd={handleAnimationEnd}
-            className="animate-credits-roll flex flex-col items-center w-full px-16 space-y-10 transform-gpu"
+            className={`flex flex-col items-center w-full px-16 transform-gpu relative z-30 transition-opacity duration-500 ${isReady ? 'opacity-100 animate-credits-roll' : 'opacity-0'}`}
+            style={{ transform: isReady ? undefined : 'translate3d(0, 768px, 0)' }}
           >
-            <div className="mb-24 text-center mt-4 flex flex-col items-center">
-              <EditableText 
-                text={data.title} 
-                className="text-6xl font-black text-yellow-400 drop-shadow-lg mb-6 text-center"
-                onChange={updateTitle}
-              />
+            <div className="h-40 shrink-0" /> {/* 顶部缓冲 */}
+            
+            <div className="text-center flex flex-col items-center mb-16">
+              <EditableText text={data.title} className="text-6xl font-black text-yellow-400 drop-shadow-lg mb-4 text-center" onChange={updateTitle} />
               <div className="w-24 h-1 bg-yellow-400/30 mx-auto rounded-full"></div>
             </div>
 
@@ -267,16 +195,16 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
               {data.content?.map((line, idx) => {
                 const isHeading = line === '致谢' || line.includes('名单');
                 const isEmpty = line.trim() === '';
-                if (isEmpty) return <div key={idx} className="h-6" />;
+                if (isEmpty) return <div key={idx} className="h-8" />;
 
                 return (
                   <div key={idx} className="w-full text-center flex flex-col items-center">
                     <EditableText
                       text={line}
-                      className={`font-medium transition-all text-center ${
+                      className={`font-medium transition-all text-center leading-tight tracking-wide ${
                         isHeading 
-                        ? 'text-4xl text-yellow-300 mt-16 mb-6 border-t border-yellow-400/20 pt-16 font-extrabold' 
-                        : 'text-2xl text-white/80'
+                        ? 'text-4xl text-yellow-300 mt-16 mb-8 border-t border-yellow-400/20 pt-12 font-extrabold' 
+                        : 'text-2xl text-white/95'
                       }`}
                       onChange={(val) => updateContent(idx, val)}
                     />
@@ -285,16 +213,20 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
               })}
             </div>
 
-            <div className="pt-[700px] pb-[1000px] w-full flex flex-col items-center">
+            {/* 关键：巨大的空白间隔（800px），确保上方的名字能滚出屏幕 */}
+            <div className="h-[800px] w-full shrink-0" />
+
+            {/* 结尾展示区：缩小文字字号至 64px 左右，更显精致 */}
+            <div className="pb-[900px] w-full flex flex-col items-center">
               <div ref={finalTitleRef} className="big-gala-title text-center inline-block">
                 <EditableText 
                   text="高一1班元旦晚会" 
-                  className="text-[84px] font-black text-shine-effect leading-none tracking-[0.25em] text-center"
+                  className="text-6xl font-black text-shine-effect leading-none tracking-[0.4em] text-center"
                   onChange={() => {}} 
                 />
               </div>
-              <div className="mt-10 text-yellow-400/40 text-2xl font-serif tracking-[1em] uppercase text-center">Happy New Year 2026</div>
-              <div className="mt-16 w-20 h-1 bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent rounded-full"></div>
+              <div className="mt-8 text-yellow-400/40 text-xl font-serif tracking-[1.4em] uppercase text-center ml-[1.4em]">Happy New Year 2026</div>
+              <div className="mt-16 w-32 h-1 bg-gradient-to-r from-transparent via-yellow-400/40 to-transparent rounded-full"></div>
             </div>
           </div>
         </div>
@@ -302,7 +234,6 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
     }
 
     if (data.type === 'board') {
-      const values = [100, 200, 300, 400, 500];
       return (
         <div className="flex flex-col h-full p-12 z-10 justify-center">
           <div className="text-center mb-12 flex flex-col items-center">
@@ -315,8 +246,8 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
                 <div className="bg-yellow-500 text-red-900 font-bold rounded-lg text-center shadow-lg h-20 flex items-center justify-center">
                    <div className="text-xl w-full text-center font-black px-2">{cat}</div>
                 </div>
-                {values.map((val) => {
-                  const targetIndex = 17 + (catIdx * 5) + (val / 100 - 1);
+                {quizValues.map((val, valIdx) => {
+                  const targetIndex = 19 + (catIdx * 5) + valIdx;
                   const isVisited = allSlides[targetIndex]?.visited;
                   return (
                     <button
@@ -343,108 +274,27 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
       const isBoard = soupState === 'board';
       return (
         <div className="flex flex-col h-full p-16 z-10 relative items-center justify-center transition-all duration-700">
-          <div className={`absolute transition-all duration-1000 ease-in-out flex flex-col ${
-            isBoard 
-            ? 'top-16 left-16 items-start scale-125' 
-            : 'top-1/2 -translate-y-[280px] items-center'
-          }`}>
-            <EditableText 
-              text={data.title} 
-              className={`font-black text-yellow-400 drop-shadow-lg leading-tight transition-all duration-1000 ${isBoard ? 'text-5xl' : 'text-8xl'}`} 
-              onChange={updateTitle} 
-            />
+          <div className={`absolute transition-all duration-1000 ease-in-out flex flex-col ${isBoard ? 'top-16 left-16 items-start scale-125' : 'top-1/2 -translate-y-[300px] items-center'}`}>
+            <EditableText text={data.title} className={`font-black text-yellow-400 drop-shadow-lg leading-tight transition-all duration-1000 ${isBoard ? 'text-5xl' : 'text-7xl'}`} onChange={updateTitle} />
             <div className={`h-1.5 bg-yellow-400/60 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.3)] transition-all duration-1000 ${isBoard ? 'w-24 mt-2' : 'w-48 mt-4'}`}></div>
           </div>
-
           {!isBoard && (
-            <div className="flex flex-col gap-4 w-full max-w-3xl bg-black/30 p-8 rounded-3xl border border-yellow-500/20 shadow-2xl backdrop-blur-md animate-title-in mt-32">
+            <div className="flex flex-col gap-4 w-full max-w-4xl bg-black/30 p-10 rounded-3xl border border-yellow-500/20 shadow-2xl backdrop-blur-md animate-title-in mt-32">
               {data.content?.map((item, idx) => (
-                <div key={idx} className="flex gap-4 items-start" style={{ animationDelay: `${idx * 0.1}s` }}>
-                  <div className="w-8 h-8 bg-yellow-500 text-red-900 rounded-full flex items-center justify-center shrink-0 font-black text-lg shadow-lg mt-0.5">
-                    {idx + 1}
-                  </div>
-                  <EditableText
-                    text={item}
-                    className="text-lg text-white font-bold leading-relaxed flex-1"
-                    onChange={(val) => updateContent(idx, val)}
-                  />
+                <div key={idx} className="flex gap-6 items-start">
+                  <div className="w-8 h-8 bg-yellow-500 text-red-900 rounded-full flex items-center justify-center shrink-0 font-black text-lg shadow-lg mt-1">{idx + 1}</div>
+                  <EditableText text={item} className="text-xl text-white font-bold leading-relaxed flex-1" onChange={(val) => updateContent(idx, val)} />
                 </div>
               ))}
-              <button 
-                onClick={(e) => { e.stopPropagation(); setSoupState('board'); }}
-                className="mt-6 self-center bg-yellow-500 text-red-900 w-12 h-12 rounded-full flex items-center justify-center font-black text-2xl hover:bg-yellow-400 active:scale-95 transition-all shadow-2xl"
-              >
-                →
-              </button>
+              <button onClick={(e) => { e.stopPropagation(); setSoupState('board'); }} className="mt-6 self-center bg-yellow-500 text-red-900 w-14 h-14 rounded-full flex items-center justify-center font-black text-3xl hover:bg-yellow-400 transition-all shadow-2xl">→</button>
             </div>
           )}
-
           {isBoard && (
             <div className="w-full h-full pt-32 animate-title-in flex flex-col">
               <div className="flex-1"></div>
-              <button 
-                onClick={(e) => { e.stopPropagation(); setSoupState('rules'); }}
-                className="absolute bottom-12 right-12 text-yellow-500/30 hover:text-yellow-500 text-xl font-bold transition-all"
-              >
-                返回规则
-              </button>
+              <button onClick={(e) => { e.stopPropagation(); setSoupState('rules'); }} className="absolute bottom-12 right-12 text-yellow-500/30 hover:text-yellow-500 text-xl font-bold transition-all">返回规则</button>
             </div>
           )}
-        </div>
-      );
-    }
-
-    if (data.type === 'list') {
-      return (
-        <div className="flex flex-col h-full p-16 z-10 relative items-center justify-center">
-          <div className="mb-12 text-center flex flex-col items-center w-full">
-            <EditableText 
-              text={data.title} 
-              className="text-7xl font-black text-yellow-400 drop-shadow-lg leading-tight text-center" 
-              onChange={updateTitle} 
-            />
-            <div className="mt-4 w-48 h-1.5 bg-yellow-400/60 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.3)]"></div>
-          </div>
-          <div className="flex flex-col gap-8 w-full max-w-4xl bg-black/30 p-12 rounded-3xl border border-yellow-500/20 shadow-2xl backdrop-blur-md">
-            {data.content?.map((item, idx) => (
-              <div key={idx} className="flex gap-6 items-start animate-title-in" style={{ animationDelay: `${idx * 0.15}s` }}>
-                <div className="w-12 h-12 bg-yellow-500 text-red-900 rounded-full flex items-center justify-center shrink-0 font-black text-2xl shadow-lg mt-1">
-                  {idx + 1}
-                </div>
-                <EditableText
-                  text={item}
-                  className="text-3xl text-white font-bold leading-relaxed flex-1"
-                  onChange={(val) => updateContent(idx, val)}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    if (data.type === 'top-left') {
-      return (
-        <div className="flex flex-col h-full p-16 z-10 relative">
-          <div className="absolute top-16 left-16 flex flex-col items-start group">
-            <EditableText 
-              text={data.title} 
-              className="text-4xl font-black text-yellow-400 drop-shadow-md text-left" 
-              onChange={updateTitle} 
-            />
-            <div className="mt-2 w-16 h-1 bg-yellow-400/40 rounded-full"></div>
-          </div>
-          
-          <div className="mt-24 w-full h-full flex flex-col gap-6">
-            {data.content?.map((item, idx) => (
-              <EditableText
-                key={idx}
-                text={item}
-                className="text-4xl text-white/90 font-medium leading-relaxed bg-black/10 hover:bg-black/20 p-4 rounded-xl border border-white/5"
-                onChange={(val) => updateContent(idx, val)}
-              />
-            ))}
-          </div>
         </div>
       );
     }
@@ -452,50 +302,38 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
     const hasImage = !!data.image;
     const isShowingImage = hasImage && step >= 1;
     const isShowingAnswer = (hasImage && step >= 2) || (!hasImage && step >= 1);
+    const answerText = data.content?.[1] || "";
+    const isQuizSlide = data.id >= 20 && data.id <= 44;
+    const isPerformanceSlide = data.id >= 2 && data.id <= 18;
 
     return (
-      <div className="flex flex-col h-full p-16 z-10 relative justify-center items-center">
-        <div className={`mb-12 text-center flex flex-col items-center w-full ${isQuizSlide ? 'mt-4' : ''}`}>
-          <EditableText 
-            text={data.title} 
-            className="text-7xl font-black text-yellow-400 drop-shadow-lg leading-tight text-center" 
-            onChange={updateTitle} 
-          />
-          <div className="mt-4 w-48 h-1.5 bg-yellow-400/60 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.3)]"></div>
+      <div className={`flex flex-col h-full z-10 relative px-16 py-12 items-center overflow-hidden ${isPerformanceSlide && !isShowingAnswer ? 'justify-center' : 'justify-start'}`}>
+        <div className={`text-center flex flex-col items-center w-full shrink-0 transition-all ${isPerformanceSlide && !isShowingAnswer ? 'mb-10' : 'mb-8'}`}>
+          <EditableText text={data.title} className="text-6xl font-black text-yellow-400 drop-shadow-lg leading-tight text-center" onChange={updateTitle} />
+          <div className="mt-2 w-48 h-1.5 bg-yellow-400/60 rounded-full"></div>
         </div>
-        
-        <div className="flex flex-col gap-10 items-center text-center w-full max-w-5xl">
-          <div className="animate-title-in w-full flex justify-center">
-             <EditableText 
-                text={data.content?.[0] || ""} 
-                className="text-5xl text-white font-bold leading-relaxed text-center" 
-                onChange={(val) => updateContent(0, val)} 
-             />
+        <div className={`flex flex-col items-center text-center w-full gap-6 ${isPerformanceSlide && !isShowingAnswer ? '' : 'flex-1 justify-center'}`}>
+          <div className="animate-title-in w-full flex justify-center shrink-0">
+             <EditableText text={data.content?.[0] || ""} className="text-4xl text-white font-bold leading-relaxed text-center max-w-4xl" onChange={(val) => updateContent(0, val)} />
           </div>
-
-          {hasImage && isShowingImage && (
-            <div className="animate-title-in overflow-hidden rounded-xl border-4 border-yellow-500/30 bg-black/40 shadow-inner w-full max-w-[700px] aspect-video flex items-center justify-center">
-              <img src={data.image} alt="Hint" className="max-h-full max-w-full object-contain transform scale-105" />
-            </div>
-          )}
-
-          {isShowingAnswer && (
-            <div className={`pt-8 border-t-2 border-white/10 animate-title-in w-full flex flex-col items-center ${hasImage ? 'bg-red-900/80 p-6 rounded-lg' : ''}`}>
-               <div className="text-yellow-500 font-black text-2xl mb-2 uppercase tracking-[0.3em] text-center opacity-80">Answer</div>
-               <EditableText 
-                  text={data.content?.[1] || ""} 
-                  className="text-6xl text-yellow-100 font-black text-center drop-shadow-lg" 
-                  onChange={(val) => updateContent(1, val)} 
-               />
-            </div>
-          )}
+          <div className={`w-full flex items-center justify-center gap-8 transition-all ${hasImage && isShowingAnswer ? 'flex-row' : 'flex-col'}`}>
+            {hasImage && isShowingImage && (
+              <div className={`animate-title-in overflow-hidden rounded-xl border-4 border-yellow-500/30 bg-black/40 shadow-2xl flex items-center justify-center shrink-0 transition-all ${isShowingAnswer ? 'w-1/2 max-h-[350px]' : 'max-w-[700px] aspect-video w-full'}`}>
+                <img src={data.image} alt="Hint" className="max-h-full max-w-full object-contain" />
+              </div>
+            )}
+            {isShowingAnswer && (
+              <div className={`animate-title-in flex flex-col items-center justify-center transition-all ${hasImage ? 'w-1/2 bg-red-900/80 p-8 rounded-2xl border border-yellow-500/20' : 'w-full pt-10 border-t border-white/10'}`}>
+                 <div className="text-yellow-500 font-black text-xl mb-3 uppercase tracking-[0.4em] opacity-80">Answer</div>
+                 <div className="w-full">
+                    <EditableText text={answerText} className={`${answerText.length > 30 ? 'text-2xl' : (answerText.length > 15 ? 'text-4xl' : 'text-6xl')} text-yellow-100 font-black text-center drop-shadow-lg w-full leading-tight`} onChange={(val) => updateContent(1, val)} />
+                 </div>
+              </div>
+            )}
+          </div>
         </div>
-
         {isQuizSlide && ((hasImage && step < 2) || (!hasImage && step < 1)) && (
-          <button 
-            onClick={nextStep}
-            className="absolute bottom-16 right-16 bg-yellow-500 text-red-900 px-10 py-4 rounded-full font-black text-2xl shadow-2xl hover:bg-yellow-400 active:scale-95 transition-all animate-pulse z-50"
-          >
+          <button onClick={nextStep} className="absolute bottom-12 right-12 bg-yellow-500 text-red-900 px-10 py-4 rounded-full font-black text-2xl shadow-2xl hover:bg-yellow-400 active:scale-95 transition-all animate-pulse z-50">
             {hasImage && step === 0 ? "显示提示图片" : "查看答案"}
           </button>
         )}
@@ -506,14 +344,9 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
   return (
     <div 
       className="relative shadow-2xl overflow-hidden select-none rounded-lg bg-red-800 prompter-card transform-gpu"
-      style={{
-        width: BASE_WIDTH,
-        height: BASE_HEIGHT,
-        transform: `scale(${scale})`,
-        transformOrigin: 'center center',
-      }}
+      style={{ width: BASE_WIDTH, height: BASE_HEIGHT, transform: `scale(${scale})`, transformOrigin: 'center center' }}
     >
-      <SlideBackground isFirst={data.id === 1} />
+      <SlideBackground />
       <div className="relative h-full w-full">{renderContent()}</div>
     </div>
   );

@@ -1,4 +1,5 @@
 
+// Import React to fix "Cannot find namespace 'React'" errors on lines 7 and 53
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { INITIAL_SLIDES } from './constants';
 import { SlideData } from './types';
@@ -13,11 +14,11 @@ const App: React.FC = () => {
 
   const totalSlides = slides.length;
   
-  // Re-calculated indices after merging slides
-  const QUIZ_BOARD_INDEX = 17; // Slide ID 18
-  const QUIZ_START_INDEX = 18; // Slide ID 19
-  const QUIZ_END_INDEX = 42;   // 25 quiz slides
-  const NEXT_AFTER_QUIZ = 43;  // Slide ID 44
+  // Re-calculated indices after adding Slide 5
+  const QUIZ_BOARD_INDEX = 18; // Slide ID 19
+  const QUIZ_START_INDEX = 19; // Slide ID 20
+  const QUIZ_END_INDEX = 43;   // 25 quiz slides
+  const NEXT_AFTER_QUIZ = 44;  // Slide ID 45
 
   const jumpToSlide = useCallback((index: number) => {
     if (index >= 0 && index < totalSlides) {

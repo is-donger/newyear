@@ -2,7 +2,7 @@
 import { SlideData } from './types';
 
 export const categories = ["元旦", "知识问答", "体育", "名人名言", "随机"];
-const values = [100, 200, 300, 400, 500];
+export const quizValues = [100, 200, 300, 400, 500];
 
 interface QuestionData {
   q: string;
@@ -10,21 +10,22 @@ interface QuestionData {
   img?: string;
 }
 
-// Main performance slides (Slides 1-17)
+// Main performance slides (Updated count: 18 slides)
 const mainSlides: SlideData[] = [
   { id: 1, title: "高一1班元旦晚会", type: 'title' },
   { id: 2, title: "剧场表演：《三只小猪》", type: 'content', content: ["表演者：203宿舍", ""] },
-  { id: 3, title: "朗诵：《短歌行》", type: 'content', content: ["表演者：204宿舍", ""] },
+  { id: 3, title: "朗诵：《我是奶龙》", type: 'content', content: ["表演者：204宿舍", ""] },
   { id: 4, title: "葫芦丝演奏：《最后一页》", type: 'content', content: ["表演者：兰立伟", ""] }, 
-  { id: 5, title: "歌曲：《演员》", type: 'content', content: ["表演者：罗智峰、庄伟杰、付孟哲、梁秋亚、周一鹏", ""] },
-  { id: 6, title: "歌曲：《爱情废柴》", type: 'content', content: ["演唱：林灏、刘德涵", ""] }, 
-  { id: 7, title: "歌曲：《My Shot》", type: 'content', content: ["演唱：林佳炫、窦筱涵", "", ""] },
-  { id: 8, title: "歌曲：《Someone Like You》", type: 'content', content: ["表演者：602宿舍", ""] }, 
-  { id: 9, title: "歌曲：《大鱼》", type: 'content', content: ["演唱：袁畅、蔡咏辰", "", ""] },
-  { id: 10, title: "班级大合唱：《海阔天空》", type: 'content', content: ["演唱：全体同学", "", ""] }, 
-  { id: 11, title: "活动：猜歌名", type: 'content', content: [] },
+  { id: 5, title: "葫芦丝演奏：《雨夜》", type: 'content', content: ["表演者：兰立伟", ""] }, 
+  { id: 6, title: "歌曲：《演员》", type: 'content', content: ["表演者：罗智峰、庄伟杰、付孟哲、梁秋亚、周一鹏", ""] },
+  { id: 7, title: "歌曲：《爱情废柴》", type: 'content', content: ["演唱：林灏、刘德涵", ""] }, 
+  { id: 8, title: "歌曲：《My Shot》", type: 'content', content: ["演唱：林佳炫、窦筱涵", "", ""] },
+  { id: 9, title: "歌曲：《Someone Like You》", type: 'content', content: ["表演者：602宿舍", ""] }, 
+  { id: 10, title: "歌曲：《大鱼》", type: 'content', content: ["演唱：袁畅、蔡咏辰", "", ""] }, 
+  { id: 11, title: "班级大合唱：《海阔天空》", type: 'content', content: ["演唱：全体同学", "", ""] }, 
+  { id: 12, title: "活动：猜歌名", type: 'content', content: [] },
   { 
-    id: 12, 
+    id: 13, 
     title: "活动：化学海龟汤", 
     type: 'soup', 
     content: [
@@ -33,16 +34,16 @@ const mainSlides: SlideData[] = [
       "此外，王蓦然与张瑞琥为大家准备了两道官方题目，答对可直接获得2分。"
     ]
   },
-  { id: 13, title: "活动：成语接龙", type: 'content', content: [] },
-  { id: 14, title: "活动：击鼓传花", type: 'content', content: [] },
-  { id: 15, title: "活动：抢蛋糕", type: 'content', content: [] },
-  { id: 16, title: "活动：你画我猜", type: 'content', content: [] },
-  { id: 17, title: "活动：数字炸弹", type: 'content', content: [] }
+  { id: 14, title: "活动：成语接龙", type: 'content', content: [] },
+  { id: 15, title: "活动：击鼓传花", type: 'content', content: [] },
+  { id: 16, title: "活动：抢蛋糕", type: 'content', content: [] },
+  { id: 17, title: "活动：你画我猜", type: 'content', content: [] },
+  { id: 18, title: "活动：数字炸弹", type: 'content', content: [] }
 ];
 
-// Slide 18: Quiz Board
+// Quiz Board Slide (Now Index 18)
 const boardSlide: SlideData = { 
-  id: 18, 
+  id: 19, 
   title: "知识问答", 
   type: 'board', 
   content: categories 
@@ -86,9 +87,9 @@ const suijiQuestions: QuestionData[] = [
 ];
 
 const quizSlides: SlideData[] = [];
-let quizId = 19;
+let quizId = 20;
 categories.forEach((cat, catIdx) => {
-  values.forEach((val, valIdx) => {
+  quizValues.forEach((val, valIdx) => {
     let content = ["题目：", "回答：", ""];
     let image = undefined;
     const questions = [yuandanQuestions, zhishiQuestions, tiyuQuestions, mingyanQuestions, suijiQuestions][catIdx];
@@ -107,9 +108,9 @@ categories.forEach((cat, catIdx) => {
   });
 });
 
-const standBASlide: SlideData = { id: 44, title: "活动：“立” BA", type: 'content', content: ["", "", ""] };
+const standBASlide: SlideData = { id: 45, title: "活动：“立” BA", type: 'content', content: ["", "", ""] };
 const creditsSlide: SlideData = { 
-  id: 45, 
+  id: 46, 
   title: "工作人员名单", 
   type: 'credits', 
   content: [

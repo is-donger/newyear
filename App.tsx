@@ -21,13 +21,16 @@ const App: React.FC = () => {
   const NEXT_AFTER_QUIZ = 43;
   const CREDITS_INDEX = 44; // 工作人员名单页索引
 
+  const stopMusic = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+  }, []);
+
   // 全局播放逻辑
   const playClosingMusic = useCallback(() => {
     const audio = audioRef.current;
     if (!audio) return;
-
-    // 如果音乐已经开始播放了，就不再重复设置时间，直接返回
-    if (!audio.paused && audio.currentTime > 0) return;
 
     const startPlay = () => {
       audio.currentTime = 25; // 从25秒开始
@@ -51,12 +54,11 @@ const App: React.FC = () => {
     }
   }, []);
 
-  // 监听索引变化，仅在到达名单页时触发播放，离开时不停止
+  // 监听索引变化，仅在到达名单页时触发播放
   useEffect(() => {
     if (currentIndex === CREDITS_INDEX) {
       playClosingMusic();
     }
-    // 删除了 else { stopClosingMusic(); } 逻辑
   }, [currentIndex, playClosingMusic, CREDITS_INDEX]);
 
   const jumpToSlide = useCallback((index: number) => {
@@ -92,14 +94,18 @@ const App: React.FC = () => {
 
   const handleContainerClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
+    // 忽略控制面板、按钮和可编辑文字
     if (target.closest('.controls-panel') || target.closest('button') || target.closest('.music-settings-btn')) return;
     if (document.activeElement?.getAttribute('contenteditable') === 'true') return;
 
     if (clickTimer.current) {
       window.clearTimeout(clickTimer.current);
       clickTimer.current = null;
+      // 双击：停止播放
+      stopMusic();
     } else {
       clickTimer.current = window.setTimeout(() => {
+        // 单击：下一页
         nextSlide();
         clickTimer.current = null;
       }, 250);
@@ -183,7 +189,7 @@ const App: React.FC = () => {
       className={`min-h-screen w-full bg-neutral-950 flex flex-col items-center justify-center relative ${isFullscreen ? 'cursor-none' : ''}`}
       onClick={handleContainerClick}
     >
-      {/* 全局音频元素，loop属性确保一直循环 */}
+      {/* 全局音频元素 */}
       <audio ref={audioRef} src={globalAudioSrc} loop preload="auto" />
 
       <div className={`controls-panel fixed top-4 right-4 z-50 flex gap-2 transition-opacity ${isFullscreen ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
@@ -238,7 +244,7 @@ const App: React.FC = () => {
 
       {!isFullscreen && (
         <div className="fixed bottom-4 left-4 text-white/30 text-xs flex flex-col gap-1">
-          <div>提示：单击背景翻页 | 方向键控制 | F 全屏</div>
+          <div>提示：单击背景翻页 | 双击背景停止音乐 | 方向键控制 | F 全屏</div>
           <div className="font-bold text-yellow-500/80">双击文字区域进行编辑修改</div>
         </div>
       )}

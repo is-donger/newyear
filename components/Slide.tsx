@@ -69,6 +69,7 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
     const file = e.target.files?.[0];
     if (file) {
       const url = URL.createObjectURL(file);
+      // 仅更新源，不触发播放。播放由 App.tsx 监听 currentIndex 处理
       onAudioSrcChange(url);
       setShowMusicSettings(false); 
     }
@@ -97,7 +98,6 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
 
   const nextStep = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // 无论有没有图片，只要是问答环节，我们统一支持 0: 题目, 1: 提示/图, 2: 答案
     if (step < 2) setStep(step + 1);
   };
 
@@ -161,7 +161,7 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
                 className="music-settings-btn bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 border border-yellow-500/50 px-4 py-2 rounded-lg text-sm font-bold backdrop-blur-md transition-all flex items-center gap-2"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"></path></svg>
-                {isMusicLoaded ? '已锁定音乐 (双击背景更换)' : '点击设置结束 BGM (25s起播)'}
+                {isMusicLoaded ? '已锁定音乐 (双击背景更换/停止)' : '点击设置背景音乐 (25s起播)'}
               </button>
             </div>
           )}
@@ -252,7 +252,6 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
       );
     }
 
-    // 问答逻辑
     const isShowingHint = step >= 1;
     const isShowingAnswer = step >= 2;
 
@@ -276,7 +275,6 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
         </div>
         
         <div className="flex flex-col gap-10 items-center text-center w-full max-w-5xl">
-          {/* 题目内容 */}
           <div className="animate-title-in w-full flex justify-center">
              <EditableText 
                 text={data.content?.[0] || ""} 
@@ -285,7 +283,6 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
              />
           </div>
 
-          {/* 提示图片区域 */}
           {isShowingHint && (
             <div className="animate-title-in w-full flex flex-col items-center">
               {data.image ? (
@@ -318,7 +315,6 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
             </div>
           )}
 
-          {/* 答案显示 */}
           {isShowingAnswer && (
             <div className="pt-8 border-t-2 border-white/10 animate-title-in w-full flex flex-col items-center bg-red-900/80 p-6 rounded-lg">
                <div className="text-yellow-500 font-black text-2xl mb-2 uppercase tracking-[0.3em] text-center opacity-80">Answer</div>
@@ -331,7 +327,6 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudio
           )}
         </div>
 
-        {/* 交互按钮 */}
         {isQuizSlide && step < 2 && (
           <button 
             onClick={nextStep}

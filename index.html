@@ -24,24 +24,19 @@
             cursor: text;
         }
 
-        /* 名单滚动动画：前端保持平稳，后端（标题出现时）显著加速 */
+        /* 名单滚动动画：采用 cubic-bezier 实现更平滑的加减速曲线 */
         @keyframes roll-to-center {
             0% { 
-                transform: translate3d(0, 768px, 0); 
-            }
-            85% {
-                /* 用 85% 的时间平稳地滚动完名单区，此时距离终点还有约 700px 的大间距 */
-                transform: translate3d(0, calc(var(--scroll-final-pos, -1500px) + 700px), 0);
+                transform: translate3d(0, 800px, 0); 
             }
             100% { 
-                /* 仅用最后 15% 的时间快速完成剩下的 700px 路程，实现结尾加速感 */
                 transform: translate3d(0, var(--scroll-final-pos, -1500px), 0); 
             }
         }
 
         .animate-credits-roll {
-            /* 总时长 24s，分段节奏由 keyframes 控制 */
-            animation: roll-to-center 24s linear forwards;
+            /* 26秒时长，使用平滑的缓动函数防止抖动 */
+            animation: roll-to-center 26s cubic-bezier(0.3, 0, 0.2, 1) forwards;
             will-change: transform;
         }
 
@@ -101,6 +96,16 @@
             -webkit-font-smoothing: antialiased;
             white-space: nowrap;
             text-shadow: 0 0 20px rgba(251, 191, 36, 0.3), 0 10px 40px rgba(0,0,0,0.6);
+        }
+
+        #fireworks-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
         }
     </style>
 <script type="importmap">

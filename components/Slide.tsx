@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, memo, useState } from 'react';
+import React, { useEffect, useRef, memo, useState, useCallback } from 'react';
 import { SlideData } from '../types';
 import EditableText from './EditableText';
 import { categories } from '../constants';
@@ -11,6 +11,107 @@ interface SlideProps {
   onUpdate: (updatedData: SlideData) => void;
   onJump?: (index: number) => void;
 }
+
+// Firework Canvas Component
+const FireworksCanvas = memo(() => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationId: number;
+    let particles: any[] = [];
+    const colors = ['#fbbf24', '#f59e0b', '#ef4444', '#f87171', '#60a5fa', '#34d399', '#fef3c7'];
+
+    const resize = () => {
+      canvas.width = canvas.offsetWidth;
+      canvas.height = canvas.offsetHeight;
+    };
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      x: number;
+      y: number;
+      vx: number;
+      vy: number;
+      alpha: number;
+      color: string;
+      life: number;
+      gravity: number;
+
+      constructor(x: number, y: number, color: string) {
+        this.x = x;
+        this.y = y;
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Math.random() * 6 + 2;
+        this.vx = Math.cos(angle) * velocity;
+        this.vy = Math.sin(angle) * velocity;
+        this.alpha = 1;
+        this.color = color;
+        this.life = Math.random() * 0.02 + 0.01;
+        this.gravity = 0.12;
+      }
+
+      update() {
+        this.vx *= 0.98;
+        this.vy *= 0.98;
+        this.vy += this.gravity;
+        this.x += this.vx;
+        this.y += this.vy;
+        this.alpha -= this.life;
+      }
+
+      draw() {
+        if (!ctx) return;
+        ctx.globalAlpha = this.alpha;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+    }
+
+    const createFirework = () => {
+      const x = Math.random() * canvas.width;
+      const y = Math.random() * (canvas.height * 0.6);
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for (let i = 0; i < 60; i++) {
+        particles.push(new Particle(x, y, color));
+      }
+    };
+
+    let lastFirework = 0;
+    const animate = (time: number) => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      if (time - lastFirework > 800) {
+        createFirework();
+        lastFirework = time;
+      }
+
+      particles = particles.filter(p => p.alpha > 0);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+
+      animationId = requestAnimationFrame(animate);
+    };
+
+    animationId = requestAnimationFrame(animate);
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} id="fireworks-canvas" />;
+});
 
 const SlideBackground = memo(({ isFirst }: { isFirst?: boolean }) => (
   <div className="absolute inset-0 bg-gradient-to-br from-red-900 to-red-700 overflow-hidden pointer-events-none transform-gpu">
@@ -36,6 +137,7 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const finalTitleRef = useRef<HTMLDivElement>(null);
   const [step, setStep] = useState(0); 
+  const [showFireworks, setShowFireworks] = useState(false);
 
   // Special sub-step for merged soup slide
   const [soupState, setSoupState] = useState<'rules' | 'board'>('rules');
@@ -44,6 +146,7 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
 
   useEffect(() => {
     if (data.type === 'credits') {
+      setShowFireworks(false);
       if (audioRef.current) {
         const audio = audioRef.current;
         audio.volume = 1.0;
@@ -70,8 +173,8 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
         const titleTop = finalTitle.offsetTop;
         const titleHeight = finalTitle.offsetHeight;
         const titleCenterInContainer = titleTop + (titleHeight / 2);
+        
         // 384 is the vertical center of a 768 height slide. 
-        // Setting it to 384 centers it exactly like the first slide's title.
         const finalPos = 384 - titleCenterInContainer;
         container.style.setProperty('--scroll-final-pos', `${finalPos}px`);
       }
@@ -85,6 +188,12 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
     };
   }, [data.type]);
 
+  const handleAnimationEnd = useCallback(() => {
+    if (data.type === 'credits') {
+      setShowFireworks(true);
+    }
+  }, [data.type]);
+
   const updateTitle = (newTitle: string) => onUpdate({ ...data, title: newTitle });
   
   const updateContent = (index: number, newText: string) => {
@@ -93,10 +202,6 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
       newContent[index] = newText;
       onUpdate({ ...data, content: newContent });
     }
-  };
-
-  const updateSubtitle = (val: string) => {
-    onUpdate({ ...data, subtitle: val });
   };
 
   const nextStep = (e: React.MouseEvent) => {
@@ -138,12 +243,17 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
     if (data.type === 'credits') {
       return (
         <div className="flex flex-col h-full z-10 relative overflow-hidden">
+          {showFireworks && <FireworksCanvas />}
           <audio ref={audioRef} src="./bgm.mp3" preload="auto" loop />
           
           <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-red-900 via-red-900/40 to-transparent z-20 pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-red-800 via-red-800/60 to-transparent z-20 pointer-events-none"></div>
 
-          <div ref={scrollContainerRef} className="animate-credits-roll flex flex-col items-center w-full px-16 space-y-10 transform-gpu">
+          <div 
+            ref={scrollContainerRef} 
+            onAnimationEnd={handleAnimationEnd}
+            className="animate-credits-roll flex flex-col items-center w-full px-16 space-y-10 transform-gpu"
+          >
             <div className="mb-24 text-center mt-4 flex flex-col items-center">
               <EditableText 
                 text={data.title} 
@@ -233,7 +343,6 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
       const isBoard = soupState === 'board';
       return (
         <div className="flex flex-col h-full p-16 z-10 relative items-center justify-center transition-all duration-700">
-          {/* Animated Title */}
           <div className={`absolute transition-all duration-1000 ease-in-out flex flex-col ${
             isBoard 
             ? 'top-16 left-16 items-start scale-125' 
@@ -247,31 +356,29 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
             <div className={`h-1.5 bg-yellow-400/60 rounded-full shadow-[0_0_10px_rgba(251,191,36,0.3)] transition-all duration-1000 ${isBoard ? 'w-24 mt-2' : 'w-48 mt-4'}`}></div>
           </div>
 
-          {/* Rules View */}
           {!isBoard && (
-            <div className="flex flex-col gap-6 w-full max-w-4xl bg-black/30 p-12 rounded-3xl border border-yellow-500/20 shadow-2xl backdrop-blur-md animate-title-in mt-20">
+            <div className="flex flex-col gap-4 w-full max-w-3xl bg-black/30 p-8 rounded-3xl border border-yellow-500/20 shadow-2xl backdrop-blur-md animate-title-in mt-32">
               {data.content?.map((item, idx) => (
-                <div key={idx} className="flex gap-6 items-start" style={{ animationDelay: `${idx * 0.1}s` }}>
-                  <div className="w-10 h-10 bg-yellow-500 text-red-900 rounded-full flex items-center justify-center shrink-0 font-black text-xl shadow-lg mt-1">
+                <div key={idx} className="flex gap-4 items-start" style={{ animationDelay: `${idx * 0.1}s` }}>
+                  <div className="w-8 h-8 bg-yellow-500 text-red-900 rounded-full flex items-center justify-center shrink-0 font-black text-lg shadow-lg mt-0.5">
                     {idx + 1}
                   </div>
                   <EditableText
                     text={item}
-                    className="text-2xl text-white font-bold leading-relaxed flex-1"
+                    className="text-lg text-white font-bold leading-relaxed flex-1"
                     onChange={(val) => updateContent(idx, val)}
                   />
                 </div>
               ))}
               <button 
                 onClick={(e) => { e.stopPropagation(); setSoupState('board'); }}
-                className="mt-8 self-center bg-yellow-500 text-red-900 w-16 h-16 rounded-full flex items-center justify-center font-black text-4xl hover:bg-yellow-400 active:scale-95 transition-all shadow-2xl"
+                className="mt-6 self-center bg-yellow-500 text-red-900 w-12 h-12 rounded-full flex items-center justify-center font-black text-2xl hover:bg-yellow-400 active:scale-95 transition-all shadow-2xl"
               >
                 →
               </button>
             </div>
           )}
 
-          {/* Blank Game Board View - No input content as requested */}
           {isBoard && (
             <div className="w-full h-full pt-32 animate-title-in flex flex-col">
               <div className="flex-1"></div>

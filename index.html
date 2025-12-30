@@ -24,7 +24,7 @@
             cursor: text;
         }
 
-        /* 名单滚动动画：采用 cubic-bezier 实现更平滑的加减速曲线 */
+        /* 名单滚动动画：采用更平滑的加速曲线，解决处理器限制导致的抖动 */
         @keyframes roll-to-center {
             0% { 
                 transform: translate3d(0, 800px, 0); 
@@ -35,12 +35,12 @@
         }
 
         .animate-credits-roll {
-            /* 26秒时长，使用平滑的缓动函数防止抖动 */
-            animation: roll-to-center 26s cubic-bezier(0.3, 0, 0.2, 1) forwards;
+            /* 延长至28秒，使用线性或极缓的贝塞尔曲线增加平稳度 */
+            animation: roll-to-center 28s cubic-bezier(0.2, 0, 0.3, 1) forwards;
             will-change: transform;
         }
 
-        /* 首屏标题入场动画 */
+        /* 标题入场动画 */
         @keyframes title-entrance {
             0% { opacity: 0; transform: scale(0.8) translateY(20px); filter: blur(10px); }
             100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
@@ -62,7 +62,7 @@
             animation: text-shine 4s linear infinite;
         }
 
-        /* 背景微动粒子效果 */
+        /* 背景微动粒子 */
         @keyframes float-particle {
             0%, 100% { transform: translate(0, 0); opacity: 0.3; }
             50% { transform: translate(20px, -20px); opacity: 0.6; }
@@ -77,18 +77,14 @@
             animation: float-particle 4s infinite ease-in-out;
         }
 
-        .scrollbar-hide::-webkit-scrollbar {
-            display: none;
-        }
-        .scrollbar-hide {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
         .prompter-card {
             transition: transform 0.1s linear;
             transform-style: preserve-3d;
             backface-visibility: hidden;
+            will-change: transform;
         }
         
         .big-gala-title {
@@ -105,7 +101,7 @@
             width: 100%;
             height: 100%;
             pointer-events: none;
-            z-index: 5;
+            z-index: 50;
         }
     </style>
 <script type="importmap">
@@ -120,5 +116,7 @@
 </head>
 <body>
     <div id="root"></div>
+    <!-- 显式添加入口文件引用，防止 Netlify 部署后黑屏 -->
+    <script type="module" src="./index.tsx"></script>
 </body>
 </html>

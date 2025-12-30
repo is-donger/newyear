@@ -14,7 +14,6 @@
             background-color: #000;
             font-family: system-ui, -apple-system, sans-serif;
         }
-        /* 硬件加速容器 */
         #root {
             transform: translateZ(0);
             backface-visibility: hidden;
@@ -25,7 +24,6 @@
             cursor: text;
         }
 
-        /* 优化后的名单滚动：移除分段，使用纯平滑位移 */
         @keyframes roll-smooth {
             0% { 
                 transform: translate3d(0, 800px, 0); 
@@ -36,14 +34,11 @@
         }
 
         .animate-credits-roll {
-            /* 增加时长至 28s 让滚动更从容，使用 linear 确保全程无抖动 */
             animation: roll-smooth 28s linear forwards;
             will-change: transform;
-            /* 强制开启硬件加速 */
             transform: translate3d(0,0,0);
         }
 
-        /* 标题入场动画优化 */
         @keyframes title-entrance {
             0% { opacity: 0; transform: scale(0.9) translateY(30px); filter: blur(10px); }
             100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
@@ -52,7 +47,6 @@
             animation: title-entrance 1.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
 
-        /* 标题流光效果 */
         @keyframes text-shine {
             0% { background-position: -200% center; }
             100% { background-position: 200% center; }
@@ -65,7 +59,6 @@
             animation: text-shine 4s linear infinite;
         }
 
-        /* 背景微动粒子 */
         @keyframes float-particle {
             0%, 100% { transform: translate(0, 0); opacity: 0.3; }
             50% { transform: translate(20px, -20px); opacity: 0.6; }
@@ -103,8 +96,8 @@
     "react-dom": "https://esm.sh/react-dom@19.0.0",
     "react-dom/client": "https://esm.sh/react-dom@19.0.0/client",
     "react/jsx-runtime": "https://esm.sh/react@19.0.0/jsx-runtime",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
 </script>

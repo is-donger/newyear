@@ -8,14 +8,15 @@ const STORAGE_KEY = 'NYE_GALA_SLIDES_V1';
 const AUDIO_STORAGE_KEY = 'NYE_GALA_AUDIO_V1';
 
 const App: React.FC = () => {
+  // 安全地初始化状态，捕获 localStorage 异常
   const [slides, setSlides] = useState<SlideData[]>(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
         return JSON.parse(saved);
-      } catch (e) {
-        return INITIAL_SLIDES;
       }
+    } catch (e) {
+      console.warn("无法访问本地存储，使用初始数据:", e);
     }
     return INITIAL_SLIDES;
   });
@@ -24,7 +25,11 @@ const App: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [scale, setScale] = useState(1);
   const [globalAudioSrc, setGlobalAudioSrc] = useState<string>(() => {
-    return localStorage.getItem(AUDIO_STORAGE_KEY) || './bgm.mp3';
+    try {
+      return localStorage.getItem(AUDIO_STORAGE_KEY) || './bgm.mp3';
+    } catch (e) {
+      return './bgm.mp3';
+    }
   });
   
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -38,12 +43,18 @@ const App: React.FC = () => {
   const CREDITS_INDEX = 44;
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(slides));
+    } catch (e) {
+      // 忽略运行时的存储失败
+    }
   }, [slides]);
 
   const handleAudioSrcChange = (src: string) => {
     setGlobalAudioSrc(src);
-    localStorage.setItem(AUDIO_STORAGE_KEY, src);
+    try {
+      localStorage.setItem(AUDIO_STORAGE_KEY, src);
+    } catch (e) {}
   };
 
   const stopMusic = useCallback(() => {
@@ -117,8 +128,13 @@ const App: React.FC = () => {
   };
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-    else document.exitFullscreen();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {
+        alert("请手动点击全屏播放按钮。");
+      });
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
   };
 
   useEffect(() => {
@@ -137,8 +153,11 @@ const App: React.FC = () => {
     const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handleFsChange);
     const calculateScale = () => {
-      // 调整为 1920 * 1080 基准
-      setScale(Math.min((window.innerWidth - 40) / 1920, (window.innerHeight - 40) / 1080));
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      if (w <= 0 || h <= 0) return;
+      // 1920 * 1080 基准缩放
+      setScale(Math.min((w - 40) / 1920, (h - 40) / 1080));
     };
     calculateScale();
     window.addEventListener('resize', calculateScale);
@@ -161,15 +180,15 @@ const App: React.FC = () => {
     <div className={`min-h-screen w-full bg-neutral-950 flex flex-col items-center justify-center relative ${isFullscreen ? 'cursor-none' : ''}`} onClick={handleContainerClick}>
       <audio ref={audioRef} src={globalAudioSrc} loop preload="auto" />
       <div className={`controls-panel fixed top-4 right-4 z-50 flex gap-2 transition-opacity ${isFullscreen ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
-        <button onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg border border-white/20 px-4 transition-all">
+        <button onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }} className="bg-white/10 hover:bg-white/20 text-white p-2 rounded-lg border border-white/20 px-4 transition-all shadow-lg backdrop-blur-md">
           {isFullscreen ? '退出全屏' : '全屏播放'}
         </button>
       </div>
-      <div className={`controls-panel fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-black/40 backdrop-blur-xl border border-white/10 p-2 px-6 rounded-full transition-opacity ${isFullscreen ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
+      <div className={`controls-panel fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-black/60 backdrop-blur-xl border border-white/10 p-2 px-6 rounded-full transition-opacity ${isFullscreen ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
         <button onClick={(e) => { e.stopPropagation(); prevSlide(); }} disabled={currentIndex === 0} className="p-2 text-white hover:bg-white/10 rounded-full disabled:opacity-20"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg></button>
         <div className="flex gap-1 overflow-x-auto max-w-md px-2 scrollbar-hide">
           {slides.map((slide, idx) => (idx >= QUIZ_START_INDEX && idx <= QUIZ_END_INDEX ? null : (
-            <div key={idx} className={`h-1.5 shrink-0 rounded-full cursor-pointer ${idx === currentIndex ? 'bg-yellow-400 w-8' : (slide.visited ? 'bg-white/10 w-3' : 'bg-white/30 w-3')}`} onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }} />
+            <div key={idx} className={`h-1.5 shrink-0 rounded-full cursor-pointer transition-all ${idx === currentIndex ? 'bg-yellow-400 w-8' : (slide.visited ? 'bg-white/20 w-3' : 'bg-white/40 w-3')}`} onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }} />
           )))}
         </div>
         <button onClick={(e) => { e.stopPropagation(); nextSlide(); }} disabled={currentIndex === totalSlides - 1} className="p-2 text-white hover:bg-white/10 rounded-full disabled:opacity-20"><svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg></button>
@@ -178,7 +197,7 @@ const App: React.FC = () => {
       <div className="flex-1 flex items-center justify-center w-full h-full p-4 overflow-hidden">
         <Slide key={slides[currentIndex].id} data={slides[currentIndex]} allSlides={slides} scale={scale} audioSrc={globalAudioSrc} onAudioSrcChange={handleAudioSrcChange} onUpdate={handleUpdateSlide} onJump={jumpToSlide} />
       </div>
-      {!isFullscreen && <div className="fixed bottom-4 left-4 text-white/30 text-xs font-bold tracking-wider">单击翻页 | 双击停止音乐 | F 全屏 | 双击文字修改</div>}
+      {!isFullscreen && <div className="fixed bottom-4 left-4 text-white/40 text-xs font-bold tracking-wider pointer-events-none">单击翻页 | 双击停止音乐 | F 全屏 | 双击文字修改</div>}
     </div>
   );
 };

@@ -24,7 +24,7 @@
             cursor: text;
         }
 
-        /* 名单滚动动画：采用更平滑的加速曲线，解决处理器限制导致的抖动 */
+        /* 名单滚动动画 */
         @keyframes roll-to-center {
             0% { 
                 transform: translate3d(0, 800px, 0); 
@@ -35,7 +35,6 @@
         }
 
         .animate-credits-roll {
-            /* 延长至28秒，使用线性或极缓的贝塞尔曲线增加平稳度 */
             animation: roll-to-center 28s cubic-bezier(0.2, 0, 0.3, 1) forwards;
             will-change: transform;
         }
@@ -107,16 +106,17 @@
 <script type="importmap">
 {
   "imports": {
-    "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "react/": "https://esm.sh/react@^19.2.3/"
+    "vite": "https://esm.sh/vite@^7.3.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3"
   }
 }
 </script>
 </head>
 <body>
     <div id="root"></div>
-    <!-- 显式添加入口文件引用，防止 Netlify 部署后黑屏 -->
-    <script type="module" src="./index.tsx"></script>
+    <script type="module" src="/index.tsx"></script>
 </body>
 </html>

@@ -137,7 +137,8 @@ const App: React.FC = () => {
     const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', handleFsChange);
     const calculateScale = () => {
-      setScale(Math.min((window.innerWidth - 40) / 1024, (window.innerHeight - 40) / 768));
+      // 调整为 1920 * 1080 基准
+      setScale(Math.min((window.innerWidth - 40) / 1920, (window.innerHeight - 40) / 1080));
     };
     calculateScale();
     window.addEventListener('resize', calculateScale);
@@ -177,7 +178,7 @@ const App: React.FC = () => {
       <div className="flex-1 flex items-center justify-center w-full h-full p-4 overflow-hidden">
         <Slide key={slides[currentIndex].id} data={slides[currentIndex]} allSlides={slides} scale={scale} audioSrc={globalAudioSrc} onAudioSrcChange={handleAudioSrcChange} onUpdate={handleUpdateSlide} onJump={jumpToSlide} />
       </div>
-      {!isFullscreen && <div className="fixed bottom-4 left-4 text-white/30 text-xs">单击翻页 | 双击停止音乐 | F 全屏 | 双击文字修改</div>}
+      {!isFullscreen && <div className="fixed bottom-4 left-4 text-white/30 text-xs font-bold tracking-wider">单击翻页 | 双击停止音乐 | F 全屏 | 双击文字修改</div>}
     </div>
   );
 };

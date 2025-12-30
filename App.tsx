@@ -9,15 +9,55 @@ const App: React.FC = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [scale, setScale] = useState(1);
+  const [globalAudioSrc, setGlobalAudioSrc] = useState<string>('./bgm.mp3');
+  
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const clickTimer = useRef<number | null>(null);
 
   const totalSlides = slides.length;
-  // Index management based on Slide IDs in constants.ts
-  // 插入一页后，主节目变成17页（索引0-16），Quiz Board变成第18页（索引17）
-  const QUIZ_BOARD_INDEX = 17; // Slide ID 18
-  const QUIZ_START_INDEX = 18; // Slide ID 19
-  const QUIZ_END_INDEX = 42;   // Slide ID 43 (25 quiz items)
-  const NEXT_AFTER_QUIZ = 43;  // Slide ID 44 (Stand BA)
+  const QUIZ_BOARD_INDEX = 17;
+  const QUIZ_START_INDEX = 18;
+  const QUIZ_END_INDEX = 42;
+  const NEXT_AFTER_QUIZ = 43;
+  const CREDITS_INDEX = 44; // 工作人员名单页索引
+
+  // 全局播放逻辑
+  const playClosingMusic = useCallback(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    // 如果音乐已经开始播放了，就不再重复设置时间，直接返回
+    if (!audio.paused && audio.currentTime > 0) return;
+
+    const startPlay = () => {
+      audio.currentTime = 25; // 从25秒开始
+      audio.play().catch(e => {
+        console.log("等待用户交互后播放");
+        const resume = () => {
+          if (audio.paused) {
+            audio.currentTime = 25;
+            audio.play();
+          }
+          window.removeEventListener('click', resume);
+        };
+        window.addEventListener('click', resume);
+      });
+    };
+
+    if (audio.readyState >= 1) {
+      startPlay();
+    } else {
+      audio.onloadedmetadata = startPlay;
+    }
+  }, []);
+
+  // 监听索引变化，仅在到达名单页时触发播放，离开时不停止
+  useEffect(() => {
+    if (currentIndex === CREDITS_INDEX) {
+      playClosingMusic();
+    }
+    // 删除了 else { stopClosingMusic(); } 逻辑
+  }, [currentIndex, playClosingMusic, CREDITS_INDEX]);
 
   const jumpToSlide = useCallback((index: number) => {
     if (index >= 0 && index < totalSlides) {
@@ -52,7 +92,7 @@ const App: React.FC = () => {
 
   const handleContainerClick = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    if (target.closest('.controls-panel') || target.closest('button')) return;
+    if (target.closest('.controls-panel') || target.closest('button') || target.closest('.music-settings-btn')) return;
     if (document.activeElement?.getAttribute('contenteditable') === 'true') return;
 
     if (clickTimer.current) {
@@ -69,7 +109,7 @@ const App: React.FC = () => {
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       document.documentElement.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+        console.error(`Error: ${err.message}`);
       });
     } else {
       document.exitFullscreen();
@@ -143,6 +183,9 @@ const App: React.FC = () => {
       className={`min-h-screen w-full bg-neutral-950 flex flex-col items-center justify-center relative ${isFullscreen ? 'cursor-none' : ''}`}
       onClick={handleContainerClick}
     >
+      {/* 全局音频元素，loop属性确保一直循环 */}
+      <audio ref={audioRef} src={globalAudioSrc} loop preload="auto" />
+
       <div className={`controls-panel fixed top-4 right-4 z-50 flex gap-2 transition-opacity ${isFullscreen ? 'opacity-0 hover:opacity-100' : 'opacity-100'}`}>
         <button 
           onClick={(e) => { e.stopPropagation(); toggleFullscreen(); }}
@@ -186,6 +229,8 @@ const App: React.FC = () => {
           data={slides[currentIndex]} 
           allSlides={slides}
           scale={scale} 
+          audioSrc={globalAudioSrc}
+          onAudioSrcChange={setGlobalAudioSrc}
           onUpdate={handleUpdateSlide}
           onJump={jumpToSlide}
         />

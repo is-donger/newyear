@@ -8,6 +8,8 @@ interface SlideProps {
   data: SlideData;
   allSlides: SlideData[];
   scale: number;
+  audioSrc: string;
+  onAudioSrcChange: (src: string) => void;
   onUpdate: (updatedData: SlideData) => void;
   onJump?: (index: number) => void;
 }
@@ -31,36 +33,26 @@ const SlideBackground = memo(({ isFirst }: { isFirst?: boolean }) => (
   </div>
 ));
 
-const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump }) => {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, audioSrc, onAudioSrcChange, onUpdate, onJump }) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const finalTitleRef = useRef<HTMLDivElement>(null);
-  const [step, setStep] = useState(0); // 0: Question, 1: Image (if exists), 2: Answer
+  
+  const [step, setStep] = useState(0); 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [showMusicSettings, setShowMusicSettings] = useState(false);
 
   const isQuizSlide = data.id >= 19 && data.id <= 43;
 
   useEffect(() => {
-    if (data.type === 'credits') {
-      if (audioRef.current) {
-        const audio = audioRef.current;
-        audio.volume = 1.0;
-        
-        const playAudio = async () => {
-          try {
-            await audio.play();
-          } catch (e) {
-            const runOnce = () => {
-              audio.play().catch(() => {});
-              window.removeEventListener('click', runOnce);
-              window.removeEventListener('keydown', runOnce);
-            };
-            window.addEventListener('click', runOnce);
-            window.addEventListener('keydown', runOnce);
-          }
-        };
-        playAudio();
-      }
+    const handleFsChange = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
 
+  useEffect(() => {
+    if (data.type === 'credits') {
       if (scrollContainerRef.current && finalTitleRef.current) {
         const container = scrollContainerRef.current;
         const finalTitle = finalTitleRef.current;
@@ -71,14 +63,27 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
         container.style.setProperty('--scroll-final-pos', `${finalPos}px`);
       }
     }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    };
   }, [data.type]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      onAudioSrcChange(url);
+      setShowMusicSettings(false); 
+    }
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        onUpdate({ ...data, image: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const updateTitle = (newTitle: string) => onUpdate({ ...data, title: newTitle });
   
@@ -92,8 +97,8 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
 
   const nextStep = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const maxStep = data.image ? 2 : 1;
-    if (step < maxStep) setStep(step + 1);
+    // 无论有没有图片，只要是问答环节，我们统一支持 0: 题目, 1: 提示/图, 2: 答案
+    if (step < 2) setStep(step + 1);
   };
 
   const BASE_WIDTH = 1024;
@@ -127,12 +132,39 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
     }
 
     if (data.type === 'credits') {
+      const isMusicLoaded = audioSrc.startsWith('blob');
+      
       return (
-        <div className="flex flex-col h-full z-10 relative overflow-hidden">
-          <audio ref={audioRef} src="./bgm.mp3" preload="auto" loop />
-          
+        <div 
+          className="flex flex-col h-full z-10 relative overflow-hidden"
+          onDoubleClick={(e) => {
+            const target = e.target as HTMLElement;
+            if (!target.closest('[contenteditable="true"]')) {
+              setShowMusicSettings(prev => !prev);
+            }
+          }}
+        >
           <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-red-900 via-red-900/40 to-transparent z-20 pointer-events-none"></div>
           <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-red-800 via-red-800/60 to-transparent z-20 pointer-events-none"></div>
+
+          {!isFullscreen && (showMusicSettings || !isMusicLoaded) && (
+            <div className="absolute top-8 left-8 z-50 animate-title-in">
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                onChange={handleFileChange} 
+                accept="audio/*" 
+                className="hidden" 
+              />
+              <button 
+                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                className="music-settings-btn bg-yellow-500/20 hover:bg-yellow-500/40 text-yellow-400 border border-yellow-500/50 px-4 py-2 rounded-lg text-sm font-bold backdrop-blur-md transition-all flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"></path></svg>
+                {isMusicLoaded ? '已锁定音乐 (双击背景更换)' : '点击设置结束 BGM (25s起播)'}
+              </button>
+            </div>
+          )}
 
           <div ref={scrollContainerRef} className="animate-credits-roll flex flex-col items-center w-full px-16 space-y-10 transform-gpu">
             <div className="mb-24 text-center mt-4 flex flex-col items-center">
@@ -220,14 +252,20 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
       );
     }
 
-    // Default Content Slide (Includes Quiz Reveal Logic)
-    const hasImage = !!data.image;
-    const isShowingImage = hasImage && step >= 1;
-    const isShowingAnswer = (hasImage && step >= 2) || (!hasImage && step >= 1);
+    // 问答逻辑
+    const isShowingHint = step >= 1;
+    const isShowingAnswer = step >= 2;
 
     return (
       <div className="flex flex-col h-full p-16 z-10 relative justify-center items-center">
-        {/* Centered Title Section */}
+        <input 
+          type="file" 
+          ref={imageInputRef} 
+          onChange={handleImageChange} 
+          accept="image/*" 
+          className="hidden" 
+        />
+
         <div className={`mb-12 text-center flex flex-col items-center w-full ${isQuizSlide ? 'mt-4' : ''}`}>
           <EditableText 
             text={data.title} 
@@ -238,7 +276,7 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
         </div>
         
         <div className="flex flex-col gap-10 items-center text-center w-full max-w-5xl">
-          {/* Question / Main Content */}
+          {/* 题目内容 */}
           <div className="animate-title-in w-full flex justify-center">
              <EditableText 
                 text={data.content?.[0] || ""} 
@@ -247,20 +285,42 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
              />
           </div>
 
-          {/* Image Step (Full view for the hint) */}
-          {hasImage && isShowingImage && (
-            <div className="animate-title-in overflow-hidden rounded-xl border-4 border-yellow-500/30 bg-black/40 shadow-inner w-full max-w-[700px] aspect-video flex items-center justify-center">
-              <img 
-                src={data.image} 
-                alt="Hint" 
-                className="max-h-full max-w-full object-contain transform scale-105" 
-              />
+          {/* 提示图片区域 */}
+          {isShowingHint && (
+            <div className="animate-title-in w-full flex flex-col items-center">
+              {data.image ? (
+                <div 
+                  className="relative group cursor-pointer overflow-hidden rounded-xl border-4 border-yellow-500/30 bg-black/40 shadow-inner w-full max-w-[700px] aspect-video flex items-center justify-center"
+                  onDoubleClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
+                >
+                  <img 
+                    src={data.image} 
+                    alt="Hint" 
+                    className="max-h-full max-w-full object-contain transform hover:scale-105 transition-transform" 
+                  />
+                  {!isFullscreen && (
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
+                      <span className="text-white text-lg font-bold">双击更换图片</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                !isFullscreen && (
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); imageInputRef.current?.click(); }}
+                    className="w-full max-w-[700px] aspect-video border-4 border-dashed border-white/20 rounded-xl bg-white/5 hover:bg-white/10 hover:border-yellow-500/50 transition-all flex flex-col items-center justify-center gap-4 text-white/40"
+                  >
+                    <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                    <span className="text-xl font-bold">点击上传提示图片</span>
+                  </button>
+                )
+              )}
             </div>
           )}
 
-          {/* Answer Step */}
+          {/* 答案显示 */}
           {isShowingAnswer && (
-            <div className={`pt-8 border-t-2 border-white/10 animate-title-in w-full flex flex-col items-center ${hasImage ? 'bg-red-900/80 p-6 rounded-lg' : ''}`}>
+            <div className="pt-8 border-t-2 border-white/10 animate-title-in w-full flex flex-col items-center bg-red-900/80 p-6 rounded-lg">
                <div className="text-yellow-500 font-black text-2xl mb-2 uppercase tracking-[0.3em] text-center opacity-80">Answer</div>
                <EditableText 
                   text={data.content?.[1] || ""} 
@@ -271,13 +331,13 @@ const Slide: React.FC<SlideProps> = ({ data, allSlides, scale, onUpdate, onJump 
           )}
         </div>
 
-        {/* Next Step Button for Quiz */}
-        {isQuizSlide && ((hasImage && step < 2) || (!hasImage && step < 1)) && (
+        {/* 交互按钮 */}
+        {isQuizSlide && step < 2 && (
           <button 
             onClick={nextStep}
             className="absolute bottom-16 right-16 bg-yellow-500 text-red-900 px-10 py-4 rounded-full font-black text-2xl shadow-2xl hover:bg-yellow-400 active:scale-95 transition-all animate-pulse z-50"
           >
-            {hasImage && step === 0 ? "显示提示图片" : "查看答案"}
+            {step === 0 ? "显示提示/图片" : "查看答案"}
           </button>
         )}
       </div>

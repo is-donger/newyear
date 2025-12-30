@@ -33,12 +33,12 @@ const App: React.FC = () => {
     if (!audio) return;
 
     const startPlay = () => {
-      audio.currentTime = 25; // 从25秒开始
+      audio.currentTime = 30; // 从30秒开始
       audio.play().catch(e => {
         console.log("等待用户交互后播放");
         const resume = () => {
           if (audio.paused) {
-            audio.currentTime = 25;
+            audio.currentTime = 30;
             audio.play();
           }
           window.removeEventListener('click', resume);
